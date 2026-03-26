@@ -1,0 +1,9 @@
+{
+  "last_assigned": {
+    "backend": "bob",
+    "frontend": "carol"
+  },
+  "skip_until": {
+    "dave": "2099-12-31"
+  }
+}

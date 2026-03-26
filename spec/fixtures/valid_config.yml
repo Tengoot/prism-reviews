@@ -1,0 +1,45 @@
+github_org: acme
+
+expertise_tags:
+  backend: [api-service, admin-portal]
+  frontend: [web-app, dashboard-ui, design-system]
+  flink:
+    - data-pipeline-orders
+    - data-pipeline-events
+    - data-pipeline-metrics
+  test: [e2e-tests]
+
+reviewers:
+  alice:
+    github: alice-gh
+    tags: [backend, flink]
+    maintainer: []
+  bob:
+    github: bob-gh
+    tags: [backend, frontend]
+  carol:
+    github: carol-gh
+    tags: [backend, frontend]
+  dave:
+    github: dave-gh
+    tags: [backend, frontend, flink]
+  eve:
+    github: eve-gh
+    tags: [flink, backend]
+
+exclude:
+  - pattern: "dependabot/*"
+    scope: expertise
+  - pattern: "renovate/*"
+    scope: expertise
+
+notifications:
+  enabled: true
+  method: terminal-notifier
+  poll_interval_minutes: 15
+  working_hours:
+    start: "09:00"
+    end: "18:00"
+    days: [mon, tue, wed, thu, fri]
+
+state_repo: acme/prism-state

@@ -1,0 +1,9 @@
+github_org: analytics
+
+expertise_tags:
+  backend: [api-service]
+
+reviewers:
+  alice:
+    github: alice-gh
+    tags: [backend]

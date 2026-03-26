@@ -1,0 +1,21 @@
+[
+  {
+    "number": 123,
+    "title": "Add new API endpoint",
+    "author": {"id": "123", "is_bot": false, "login": "alice", "name": "Alice"},
+    "headRefName": "feature/new-endpoint",
+    "labels": [{"name": "enhancement"}, {"name": "backend"}],
+    "reviewRequests": [
+      {"__typename": "User", "login": "bob"},
+      {"__typename": "Team", "name": "platform-team", "slug": "acme/platform-team"}
+    ]
+  },
+  {
+    "number": 456,
+    "title": "Fix dashboard rendering",
+    "author": {"id": "456", "is_bot": false, "login": "charlie", "name": "Charlie"},
+    "headRefName": "fix/dashboard",
+    "labels": [],
+    "reviewRequests": []
+  }
+]
