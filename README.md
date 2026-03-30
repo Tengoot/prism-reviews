@@ -16,8 +16,6 @@ brew tap Tengoot/prism
 brew install prism-reviews
 ```
 
-Installs into Homebrew's own Ruby — survives RVM/rbenv version switches.
-
 To update:
 
 ```sh
