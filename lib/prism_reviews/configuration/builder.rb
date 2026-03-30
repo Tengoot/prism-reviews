@@ -22,7 +22,9 @@ module PrismReviews
       end
 
       def self.build_exclude(exclude)
-        (exclude || []).map { |rule| ExclusionRule.new(pattern: rule['pattern'], scope: rule['scope']) }
+        (exclude || []).map do |rule|
+          ExclusionRule.new(pattern: rule['pattern'], scope: rule['scope'], repos: rule.fetch('repos', []))
+        end
       end
 
       def self.build_notifications(data)

@@ -222,6 +222,67 @@ RSpec.describe PrismReviews::Configuration::Loader do
         file.unlink
       end
 
+      it 'raises when scope is invalid' do
+        yaml = <<~YAML
+          github_org: test
+          expertise_tags:
+            backend: [repo]
+          reviewers:
+            alice:
+              github: alice-gh
+              tags: [backend]
+          exclude:
+            - pattern: "dependabot/*"
+              scope: invalid
+        YAML
+        file = write_temp_config(yaml)
+        expect { described_class.call(path: file.path) }
+          .to raise_error(PrismReviews::ConfigValidationError, /scope must be one of/)
+      ensure
+        file.unlink
+      end
+
+      it 'loads repos field on exclusion rules' do
+        yaml = <<~YAML
+          github_org: test
+          expertise_tags:
+            backend: [repo]
+          reviewers:
+            alice:
+              github: alice-gh
+              tags: [backend]
+          exclude:
+            - pattern: "dependabot/*"
+              scope: all
+              repos: [api-service]
+        YAML
+        file = write_temp_config(yaml)
+        config = described_class.call(path: file.path)
+        expect(config.exclude.first.repos).to eq(%w[api-service])
+      ensure
+        file.unlink
+      end
+
+      it 'defaults repos to empty array when omitted' do
+        yaml = <<~YAML
+          github_org: test
+          expertise_tags:
+            backend: [repo]
+          reviewers:
+            alice:
+              github: alice-gh
+              tags: [backend]
+          exclude:
+            - pattern: "dependabot/*"
+              scope: expertise
+        YAML
+        file = write_temp_config(yaml)
+        config = described_class.call(path: file.path)
+        expect(config.exclude.first.repos).to eq([])
+      ensure
+        file.unlink
+      end
+
       it 'raises when entry is missing scope' do
         yaml = <<~YAML
           github_org: test

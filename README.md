@@ -56,6 +56,10 @@ exclude:
     scope: expertise
   - pattern: "renovate/*"
     scope: expertise
+  # Fully exclude dep updates for a specific repo
+  - pattern: "dependabot/*"
+    scope: all
+    repos: [api-service]
 
 # Optional: shared state repo for rotation (GitHub org/repo)
 state_repo: my-org/prism-state
@@ -68,8 +72,20 @@ state_repo: my-org/prism-state
 | `github_org` | yes | GitHub organization name |
 | `expertise_tags` | yes | Map of tag names to repository lists |
 | `reviewers` | yes | Map of reviewer names to their GitHub handle, tags, and optional maintainer repos |
-| `exclude` | no | Branch patterns to exclude from the expertise queue |
+| `exclude` | no | Branch pattern exclusion rules (see below) |
 | `state_repo` | no | GitHub repo for shared rotation state (enables `claim`/`skip`/`reassign`) |
+
+### Exclude rules
+
+Each exclusion rule has:
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `pattern` | yes | Glob pattern matched against the PR branch name |
+| `scope` | yes | Which queue to exclude from: `expertise`, `maintainer`, or `all` |
+| `repos` | no | Limit the rule to specific repos (short names). Omit to apply to all repos |
+
+Use `scope: expertise` to hide automated PRs from expertise while still routing them to maintainers. Use `scope: all` with `repos` to fully suppress specific repos' automated PRs.
 
 ## Usage
 

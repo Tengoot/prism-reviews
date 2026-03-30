@@ -16,6 +16,7 @@ module PrismReviews
           optional(:exclude).array(:hash) do
             required(:pattern).filled(:string)
             required(:scope).filled(:string)
+            optional(:repos).array(:string)
           end
 
           optional(:notifications).hash do
@@ -59,6 +60,11 @@ module PrismReviews
               key([:reviewers, name]).failure("#{field} #{messages.join(', ')}")
             end
           end
+        end
+
+        rule(:exclude).each do
+          key.failure('scope must be one of: expertise, maintainer, all') unless
+            %w[expertise maintainer all].include?(value[:scope])
         end
       end
 

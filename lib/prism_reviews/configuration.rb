@@ -8,7 +8,7 @@ module PrismReviews
     DEFAULT_PATH = File.join(Dir.home, '.config', 'prism', 'config.yml').freeze
 
     Reviewer = Data.define(:name, :github, :tags, :maintainer)
-    ExclusionRule = Data.define(:pattern, :scope)
+    ExclusionRule = Data.define(:pattern, :scope, :repos)
     WorkingHours = Data.define(:start_time, :end_time, :days)
     Notifications = Data.define(:enabled, :notify_method, :poll_interval_minutes, :working_hours)
 
