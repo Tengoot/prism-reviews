@@ -17,8 +17,8 @@ RSpec.describe PrismReviews::Filter do
         PrismReviews::Configuration::Reviewer.new(name: 'carol', github: 'carol-gh', tags: %w[backend frontend],
                                                   maintainer: [])
       ],
-      exclude: [
-        PrismReviews::Configuration::ExclusionRule.new(pattern: 'dependabot/*', scope: 'expertise', repos: [])
+      include_rules: [
+        PrismReviews::Configuration::FilterRule.new(pattern: 'feature/*', scope: 'expertise', repos: [])
       ]
     )
   end
@@ -92,14 +92,14 @@ RSpec.describe PrismReviews::Filter do
         expect(result.expertise).to be_empty
       end
 
-      it 'excludes PRs matching exclusion rules' do
+      it 'excludes PRs not matching include patterns' do
         pr = make_pr(number: 3, repo: 'acme/api-service', author: 'outsider', head_ref: 'dependabot/npm/lodash')
         result = described_class.call(pull_requests: [pr], config:, current_user:)
 
         expect(result.expertise).to be_empty
       end
 
-      it 'does not exclude PRs that do not match exclusion patterns' do
+      it 'includes PRs matching include patterns' do
         pr = make_pr(number: 3, repo: 'acme/api-service', author: 'outsider', head_ref: 'feature/new-thing')
         result = described_class.call(pull_requests: [pr], config:, current_user:)
 
@@ -115,7 +115,7 @@ RSpec.describe PrismReviews::Filter do
         expect(result.maintainer).to be_empty # deduplicated to expertise
       end
 
-      it 'includes maintainer PRs even if excluded from expertise' do
+      it 'includes maintainer PRs not matching expertise include patterns' do
         pr = make_pr(number: 4, repo: 'acme/api-service', author: 'outsider', head_ref: 'dependabot/npm/lodash')
         result = described_class.call(pull_requests: [pr], config:, current_user:)
 
@@ -130,8 +130,8 @@ RSpec.describe PrismReviews::Filter do
       end
     end
 
-    context 'scope-aware exclusions' do
-      it 'scope=all excludes from both expertise and maintainer' do
+    context 'scope-aware inclusion' do
+      it 'scope=all includes in both expertise and maintainer' do
         config_with_all = PrismReviews::Configuration.new(
           github_org: 'acme',
           expertise_tags: { 'backend' => %w[api-service] },
@@ -139,18 +139,20 @@ RSpec.describe PrismReviews::Filter do
             PrismReviews::Configuration::Reviewer.new(name: 'alice', github: 'alice-gh', tags: %w[backend],
                                                       maintainer: %w[api-service])
           ],
-          exclude: [
-            PrismReviews::Configuration::ExclusionRule.new(pattern: 'dependabot/*', scope: 'all', repos: [])
+          include_rules: [
+            PrismReviews::Configuration::FilterRule.new(pattern: 'feature/*', scope: 'all', repos: [])
           ]
         )
-        pr = make_pr(number: 7, repo: 'acme/api-service', author: 'outsider', head_ref: 'dependabot/npm/lodash')
-        result = described_class.call(pull_requests: [pr], config: config_with_all, current_user:)
+        included_pr = make_pr(number: 7, repo: 'acme/api-service', author: 'outsider', head_ref: 'feature/thing')
+        excluded_pr = make_pr(number: 8, repo: 'acme/api-service', author: 'outsider', head_ref: 'dependabot/lodash')
+        result = described_class.call(pull_requests: [included_pr, excluded_pr], config: config_with_all,
+                                      current_user:)
 
-        expect(result.expertise).to be_empty
-        expect(result.maintainer).to be_empty
+        expect(result.expertise).to eq([included_pr])
+        expect(result.maintainer).to be_empty # deduplicated to expertise
       end
 
-      it 'scope=maintainer excludes from maintainer only' do
+      it 'scope=maintainer filters maintainer only, expertise passes all' do
         config_with_maint = PrismReviews::Configuration.new(
           github_org: 'acme',
           expertise_tags: { 'backend' => %w[api-service] },
@@ -158,18 +160,18 @@ RSpec.describe PrismReviews::Filter do
             PrismReviews::Configuration::Reviewer.new(name: 'alice', github: 'alice-gh', tags: %w[backend],
                                                       maintainer: %w[api-service])
           ],
-          exclude: [
-            PrismReviews::Configuration::ExclusionRule.new(pattern: 'dependabot/*', scope: 'maintainer', repos: [])
+          include_rules: [
+            PrismReviews::Configuration::FilterRule.new(pattern: 'dependabot/*', scope: 'maintainer', repos: [])
           ]
         )
-        pr = make_pr(number: 8, repo: 'acme/api-service', author: 'outsider', head_ref: 'dependabot/npm/lodash')
-        result = described_class.call(pull_requests: [pr], config: config_with_maint, current_user:)
+        dep_pr = make_pr(number: 8, repo: 'acme/api-service', author: 'outsider', head_ref: 'dependabot/lodash')
+        result = described_class.call(pull_requests: [dep_pr], config: config_with_maint, current_user:)
 
-        expect(result.expertise).to eq([pr])
-        expect(result.maintainer).to be_empty
+        expect(result.expertise).to eq([dep_pr])
+        expect(result.maintainer).to be_empty # deduplicated to expertise
       end
 
-      it 'repos field limits exclusion to named repos' do
+      it 'repos field limits inclusion to named repos' do
         config_with_repos = PrismReviews::Configuration.new(
           github_org: 'acme',
           expertise_tags: { 'backend' => %w[api-service admin-portal] },
@@ -177,23 +179,34 @@ RSpec.describe PrismReviews::Filter do
             PrismReviews::Configuration::Reviewer.new(name: 'alice', github: 'alice-gh', tags: %w[backend],
                                                       maintainer: %w[api-service admin-portal])
           ],
-          exclude: [
-            PrismReviews::Configuration::ExclusionRule.new(pattern: 'dependabot/*', scope: 'expertise', repos: []),
-            PrismReviews::Configuration::ExclusionRule.new(pattern: 'dependabot/*', scope: 'all',
-                                                           repos: %w[api-service])
+          include_rules: [
+            PrismReviews::Configuration::FilterRule.new(pattern: 'feature/*', scope: 'expertise',
+                                                        repos: %w[api-service])
           ]
         )
 
-        pr_targeted = make_pr(number: 9, repo: 'acme/api-service', author: 'outsider',
-                              head_ref: 'dependabot/npm/lodash')
-        pr_other = make_pr(number: 10, repo: 'acme/admin-portal', author: 'outsider',
-                           head_ref: 'dependabot/npm/react')
+        pr_included = make_pr(number: 9, repo: 'acme/api-service', author: 'outsider', head_ref: 'feature/thing')
+        pr_excluded = make_pr(number: 10, repo: 'acme/admin-portal', author: 'outsider', head_ref: 'feature/other')
 
-        result = described_class.call(pull_requests: [pr_targeted, pr_other], config: config_with_repos,
+        result = described_class.call(pull_requests: [pr_included, pr_excluded], config: config_with_repos,
                                       current_user:)
 
-        expect(result.expertise).to be_empty
-        expect(result.maintainer).to eq([pr_other])
+        expect(result.expertise).to eq([pr_included])
+      end
+
+      it 'passes all PRs when no include rules exist for a queue' do
+        config_no_rules = PrismReviews::Configuration.new(
+          github_org: 'acme',
+          expertise_tags: { 'backend' => %w[api-service] },
+          reviewers: [
+            PrismReviews::Configuration::Reviewer.new(name: 'alice', github: 'alice-gh', tags: %w[backend],
+                                                      maintainer: %w[api-service])
+          ]
+        )
+        pr = make_pr(number: 11, repo: 'acme/api-service', author: 'outsider', head_ref: 'anything/at-all')
+        result = described_class.call(pull_requests: [pr], config: config_no_rules, current_user:)
+
+        expect(result.expertise).to eq([pr])
       end
     end
 
@@ -221,7 +234,8 @@ RSpec.describe PrismReviews::Filter do
       it 'distributes PRs across queues correctly' do
         direct_pr = make_pr(number: 1, repo: 'acme/unknown-repo', author: 'outsider', requested_reviewers: ['alice-gh'])
         team_pr = make_pr(number: 2, repo: 'acme/web-app', author: 'bob-gh')
-        expertise_pr = make_pr(number: 3, repo: 'acme/admin-portal', author: 'outsider')
+        expertise_pr = make_pr(number: 3, repo: 'acme/admin-portal', author: 'outsider',
+                               head_ref: 'feature/new-thing')
         maintainer_pr = make_pr(number: 4, repo: 'acme/api-service', author: 'outsider',
                                 head_ref: 'dependabot/npm/lodash')
         unrelated_pr = make_pr(number: 5, repo: 'acme/other-repo', author: 'outsider')

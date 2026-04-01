@@ -41,11 +41,11 @@ RSpec.describe PrismReviews::Configuration::Loader do
         expect(bob.maintainer).to eq([])
       end
 
-      it 'loads exclusion rules' do
-        expect(config.exclude).to all(be_a(PrismReviews::Configuration::ExclusionRule))
-        expect(config.exclude.size).to eq(2)
-        expect(config.exclude.first.pattern).to eq('dependabot/*')
-        expect(config.exclude.first.scope).to eq('expertise')
+      it 'loads inclusion rules' do
+        expect(config.include_rules).to all(be_a(PrismReviews::Configuration::FilterRule))
+        expect(config.include_rules.size).to eq(2)
+        expect(config.include_rules.first.pattern).to eq('feature/*')
+        expect(config.include_rules.first.scope).to eq('expertise')
       end
 
       it 'loads notifications' do
@@ -80,8 +80,8 @@ RSpec.describe PrismReviews::Configuration::Loader do
         expect(config.reviewers.size).to eq(1)
       end
 
-      it 'defaults exclude to empty array' do
-        expect(config.exclude).to eq([])
+      it 'defaults include_rules to empty array' do
+        expect(config.include_rules).to eq([])
       end
 
       it 'defaults notifications to nil' do
@@ -202,7 +202,7 @@ RSpec.describe PrismReviews::Configuration::Loader do
       end
     end
 
-    context 'with invalid exclude entries' do
+    context 'with invalid include entries' do
       it 'raises when entry is missing pattern' do
         yaml = <<~YAML
           github_org: test
@@ -212,12 +212,12 @@ RSpec.describe PrismReviews::Configuration::Loader do
             alice:
               github: alice-gh
               tags: [backend]
-          exclude:
+          include:
             - scope: expertise
         YAML
         file = write_temp_config(yaml)
         expect { described_class.call(path: file.path) }
-          .to raise_error(PrismReviews::ConfigValidationError, /exclude.*pattern/m)
+          .to raise_error(PrismReviews::ConfigValidationError, /include.*pattern/m)
       ensure
         file.unlink
       end
@@ -231,8 +231,8 @@ RSpec.describe PrismReviews::Configuration::Loader do
             alice:
               github: alice-gh
               tags: [backend]
-          exclude:
-            - pattern: "dependabot/*"
+          include:
+            - pattern: "feature/*"
               scope: invalid
         YAML
         file = write_temp_config(yaml)
@@ -242,7 +242,7 @@ RSpec.describe PrismReviews::Configuration::Loader do
         file.unlink
       end
 
-      it 'loads repos field on exclusion rules' do
+      it 'loads repos field on inclusion rules' do
         yaml = <<~YAML
           github_org: test
           expertise_tags:
@@ -251,14 +251,14 @@ RSpec.describe PrismReviews::Configuration::Loader do
             alice:
               github: alice-gh
               tags: [backend]
-          exclude:
-            - pattern: "dependabot/*"
+          include:
+            - pattern: "feature/*"
               scope: all
               repos: [api-service]
         YAML
         file = write_temp_config(yaml)
         config = described_class.call(path: file.path)
-        expect(config.exclude.first.repos).to eq(%w[api-service])
+        expect(config.include_rules.first.repos).to eq(%w[api-service])
       ensure
         file.unlink
       end
@@ -272,13 +272,13 @@ RSpec.describe PrismReviews::Configuration::Loader do
             alice:
               github: alice-gh
               tags: [backend]
-          exclude:
-            - pattern: "dependabot/*"
+          include:
+            - pattern: "feature/*"
               scope: expertise
         YAML
         file = write_temp_config(yaml)
         config = described_class.call(path: file.path)
-        expect(config.exclude.first.repos).to eq([])
+        expect(config.include_rules.first.repos).to eq([])
       ensure
         file.unlink
       end
@@ -292,12 +292,12 @@ RSpec.describe PrismReviews::Configuration::Loader do
             alice:
               github: alice-gh
               tags: [backend]
-          exclude:
-            - pattern: "dependabot/*"
+          include:
+            - pattern: "feature/*"
         YAML
         file = write_temp_config(yaml)
         expect { described_class.call(path: file.path) }
-          .to raise_error(PrismReviews::ConfigValidationError, /exclude.*scope/m)
+          .to raise_error(PrismReviews::ConfigValidationError, /include.*scope/m)
       ensure
         file.unlink
       end

@@ -56,27 +56,30 @@ module PrismReviews
     def expertise?(pull_request)
       return false if @reviewer.nil?
       return false if @team_logins.include?(pull_request.author)
-      return false if excluded_from?(pull_request, :expertise)
+      return false unless included_in?(pull_request, :expertise)
 
       my_repos.include?(repo_short_name(pull_request.repo))
     end
 
     def maintainer?(pull_request)
       return false if @reviewer.nil?
-      return false if excluded_from?(pull_request, :maintainer)
+      return false unless included_in?(pull_request, :maintainer)
 
       my_maintainer_repos.include?(repo_short_name(pull_request.repo))
     end
 
-    def excluded_from?(pull_request, queue)
-      @config.exclude.any? { |rule| applies_to_queue?(rule, queue) && matches_exclusion?(rule, pull_request) }
+    def included_in?(pull_request, queue)
+      rules = rules_for_queue(queue)
+      return true if rules.empty?
+
+      rules.any? { |rule| matches_rule?(rule, pull_request) }
     end
 
-    def applies_to_queue?(rule, queue)
-      rule.scope == 'all' || rule.scope == queue.to_s
+    def rules_for_queue(queue)
+      @config.include_rules.select { |rule| rule.scope == 'all' || rule.scope == queue.to_s }
     end
 
-    def matches_exclusion?(rule, pull_request)
+    def matches_rule?(rule, pull_request)
       return false unless File.fnmatch(rule.pattern, pull_request.head_ref)
       return true if rule.repos.empty?
 

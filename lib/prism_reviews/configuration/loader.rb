@@ -13,7 +13,7 @@ module PrismReviews
           required(:expertise_tags).filled(:hash)
           required(:reviewers).filled(:hash)
 
-          optional(:exclude).array(:hash) do
+          optional(:include).array(:hash) do
             required(:pattern).filled(:string)
             required(:scope).filled(:string)
             optional(:repos).array(:string)
@@ -62,7 +62,7 @@ module PrismReviews
           end
         end
 
-        rule(:exclude).each do
+        rule(:include).each do
           key.failure('scope must be one of: expertise, maintainer, all') unless
             %w[expertise maintainer all].include?(value[:scope])
         end

@@ -8,7 +8,7 @@ module PrismReviews
           github_org: data['github_org'],
           expertise_tags: data['expertise_tags'],
           reviewers: build_reviewers(data['reviewers']),
-          exclude: build_exclude(data['exclude']),
+          include_rules: build_include(data['include']),
           notifications: build_notifications(data['notifications']),
           state_repo: data['state_repo']
         )
@@ -21,9 +21,9 @@ module PrismReviews
         end
       end
 
-      def self.build_exclude(exclude)
-        (exclude || []).map do |rule|
-          ExclusionRule.new(pattern: rule['pattern'], scope: rule['scope'], repos: rule.fetch('repos', []))
+      def self.build_include(include_rules)
+        (include_rules || []).map do |rule|
+          FilterRule.new(pattern: rule['pattern'], scope: rule['scope'], repos: rule.fetch('repos', []))
         end
       end
 
